@@ -1,7 +1,12 @@
 package com.mjdb.restful.controller;
 
+import com.mjdb.restful.dto.UserDTO;
+import com.mjdb.restful.model.User;
+import com.mjdb.restful.service.IUserService;
+import jakarta.validation.Valid;
+import java.util.Comparator;
 import java.util.List;
-
+import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,12 +21,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.mjdb.restful.dto.UserDTO;
-import com.mjdb.restful.model.User;
-import com.mjdb.restful.service.IUserService;
-
-import jakarta.validation.Valid;
-
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -35,18 +34,26 @@ public class UserController {
   @GetMapping("/{id}")
   public ResponseEntity<UserDTO> getUserByID(@RequestParam Long id)
     throws Exception {
-    return new ResponseEntity<>(service.getUserByID(id), HttpStatus.OK);
+    return new ResponseEntity<>(toDTO(service.findById(id)), HttpStatus.OK);
   }
 
   @GetMapping
   public ResponseEntity<List<UserDTO>> getAllUsers() throws Exception {
-    return new ResponseEntity<>(service.getAllUsers(), HttpStatus.OK);
+    List<UserDTO> users = service
+      .list()
+      .stream()
+      .map(user -> toDTO(user))
+      .sorted(Comparator.comparing(UserDTO::getId))
+      .collect(Collectors.toList());
+
+    return new ResponseEntity<>(users, HttpStatus.OK);
   }
 
   @PostMapping("/create")
   public ResponseEntity<UserDTO> create(@Valid @RequestBody UserDTO userDTO)
     throws Exception {
-    UserDTO response = service.create(toEntity(userDTO));
+    User user = toEntity(userDTO);
+    UserDTO response = toDTO(service.create(user));
 
     return new ResponseEntity<>(response, HttpStatus.OK);
   }
